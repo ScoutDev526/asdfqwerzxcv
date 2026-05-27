@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import es.ing.dailybanking.packagesolutionselling.core.internal.services.selling.SignPackageAgreementService;
+
 /** Handles the legacy activation flow for Package Agreements. */
 @Component
 public class PackageAgreementLegacyActivationUseCase
@@ -44,6 +46,7 @@ public class PackageAgreementLegacyActivationUseCase
   private final PushPkgLifecycleChangesPort pushPkgLifecycleChangesPort;
   private final ScheduledExecutorService scheduler;
   private final NotifyBillingService notifyBillingService;
+  private final SignPackageAgreementService signPackageAgreementService;
 
   public PackageAgreementLegacyActivationUseCase(
       AuditLogPort auditLogPort,
@@ -62,7 +65,8 @@ public class PackageAgreementLegacyActivationUseCase
       UpdateAgreementPort updateAgreementPort,
       SaveSellingProcessPort saveSellingProcessPort,
       SaveBenefitPlatformsNotificationsPort saveBenefitPlatformsNotificationsPort,
-      UpdatePackageAgreementHistoryLifecycleStatusPort updatePackageAgreementHistoryLifecycleStatusPort) {
+      UpdatePackageAgreementHistoryLifecycleStatusPort updatePackageAgreementHistoryLifecycleStatusPort,
+      SignPackageAgreementService signPackageAgreementService) {
     super(getSellingProcessByIdProcessPort, auditLogPort, saveSellingProcessPort,
         saveBenefitPlatformsNotificationsPort, updateAgreementPort,
         updatePackageAgreementHistoryLifecycleStatusPort);
@@ -77,6 +81,7 @@ public class PackageAgreementLegacyActivationUseCase
     this.pushPkgLifecycleChangesPort = pushPkgLifecycleChangesPort;
     this.scheduler = scheduler;
     this.notifyBillingService = notifyBillingService;
+    this.signPackageAgreementService = signPackageAgreementService;
   }
 
   /**
@@ -350,23 +355,8 @@ public class PackageAgreementLegacyActivationUseCase
    */
   private CompletionStage<SellingProcessResponse> handleNotIdentifiedFlow(
       UseCaseContext ctx) {
-
-    return updateProductAgreements(
-            ctx.sellingProcess,
-            LIFECYCLE_STATUS_TYPE_ACPTD_AR)
-        .thenCompose(agreementIdentifier ->
-            updatePackageAgreementHistoryLifecycleStatusPort
-                .updatePackageAgreementHistoryLifecycleStatus(agreementIdentifier,
-                    LIFECYCLE_STATUS_TYPE_ACPTD_AR))
-        .thenCompose(unused -> {
-          ctx.sellingProcess.signPackage();
-          return saveSellingProcess(ctx.sellingProcess);
-        })
-        .thenCompose(ignore ->
-            insertRecordToTrackBenefitPlatformsNotifications(
-                ctx.involvedPartyIdentifier, true, false))
-        .thenCompose(ignore -> insertAuditOpening(ctx.sellingProcess, SIGNING, ""))
-        .thenApply(ignore -> createSellingProcessResponse(ctx.sellingProcess));
+    return signPackageAgreementService.signAndPersist(
+        ctx.sellingProcess, true, false, "");
   }
 
   /**

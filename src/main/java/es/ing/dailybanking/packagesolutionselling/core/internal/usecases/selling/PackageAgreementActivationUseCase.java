@@ -1,7 +1,6 @@
 package es.ing.dailybanking.packagesolutionselling.core.internal.usecases.selling;
 
 import static es.ing.dailybanking.packagesolutionselling.core.internal.usecases.selling.Constants.HYPHEN;
-import static es.ing.dailybanking.packagesolutionselling.core.internal.usecases.selling.Constants.LIFECYCLE_STATUS_TYPE_ACPTD_AR;
 import static es.ing.dailybanking.packagesolutionselling.core.internal.usecases.selling.Constants.SECURITY_METHOD_NONE;
 
 import java.util.Optional;
@@ -13,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import es.ing.dailybanking.packagesolutionselling.core.internal.services.selling.SignPackageAgreementService;
+
 /** Use case responsible for activating a package agreement. */
 @Component
 public class PackageAgreementActivationUseCase extends AbstractPackageAgreementActivationUseCase
@@ -23,6 +24,7 @@ public class PackageAgreementActivationUseCase extends AbstractPackageAgreementA
 
   private final ContractSignaturePort contractSignaturePort;
   private final GetSellingProcessHierarchyPort getSellingProcessHierarchyPort;
+  private final SignPackageAgreementService signPackageAgreementService;
 
   public PackageAgreementActivationUseCase(
       ContractSignaturePort contractSignaturePort,
@@ -32,12 +34,14 @@ public class PackageAgreementActivationUseCase extends AbstractPackageAgreementA
       SaveSellingProcessPort saveSellingProcessPort,
       SaveBenefitPlatformsNotificationsPort saveBenefitPlatformsNotificationsPort,
       UpdatePackageAgreementHistoryLifecycleStatusPort updatePackageAgreementHistoryLifecycleStatusPort,
-      GetSellingProcessHierarchyPort getSellingProcessHierarchyPort) {
+      GetSellingProcessHierarchyPort getSellingProcessHierarchyPort,
+      SignPackageAgreementService signPackageAgreementService) {
     super(getSellingProcessByIdProcessPort, auditLogPort, saveSellingProcessPort,
         saveBenefitPlatformsNotificationsPort, updateAgreementPort,
         updatePackageAgreementHistoryLifecycleStatusPort);
     this.contractSignaturePort = contractSignaturePort;
     this.getSellingProcessHierarchyPort = getSellingProcessHierarchyPort;
+    this.signPackageAgreementService = signPackageAgreementService;
   }
 
   /**
@@ -80,21 +84,11 @@ public class PackageAgreementActivationUseCase extends AbstractPackageAgreementA
                   throw new DomainModelViolationException(
                       "Contract signature information not found for processId: " + request.processId());
                 }))
-        .thenCompose(unused -> updateProductAgreements(ctx.sellingProcess,
-            LIFECYCLE_STATUS_TYPE_ACPTD_AR))
-        .thenCompose(agreementIdentifier ->
-            updatePackageAgreementHistoryLifecycleStatusPort
-                .updatePackageAgreementHistoryLifecycleStatus(agreementIdentifier,
-                    LIFECYCLE_STATUS_TYPE_ACPTD_AR))
-        .thenCompose(unused -> {
-          ctx.sellingProcess.signPackage();
-          return saveSellingProcess(ctx.sellingProcess);
-        })
-        .thenCompose(unused -> insertRecordToTrackBenefitPlatformsNotifications(
-            ctx.sellingProcess.getInvolvedPartyId(), false, false))
-        .thenCompose(unused -> insertAuditOpening(ctx.sellingProcess, SIGNING,
+        .thenCompose(unused -> signPackageAgreementService.signAndPersist(
+            ctx.sellingProcess,
+            false,
+            false,
             SECURITY_METHOD_NONE + " " + HYPHEN + " " + ctx.externalReference))
-        .thenApply(unused -> createSellingProcessResponse(ctx.sellingProcess))
         .whenComplete(
             LogWhenComplete.logWhenComplete(
                 String.format("SellingProcess %s activated for processId", request.processId()),

@@ -6,7 +6,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.springframework.stereotype.Component;
 
-// TODO: resolve real import paths when applying to the ING codebase
 import es.ing.dailybanking.packagesolutionselling.core.domain.AgreementIdentifier;
 import es.ing.dailybanking.packagesolutionselling.core.domain.AuditLogInput;
 import es.ing.dailybanking.packagesolutionselling.core.domain.BenefitPlatformsNotification;
@@ -73,7 +72,7 @@ public class SignPackageAgreementService {
     return updateAgreementPort
         .updateAgreementLifecycleStatus(sellingProcess.getPackageAgreementId(),
             LIFECYCLE_STATUS_TYPE_ACPTD_AR)
-        .thenCompose((AgreementIdentifier agreementIdentifier) ->
+        .thenCompose(agreementIdentifier ->
             updatePackageAgreementHistoryLifecycleStatusPort
                 .updatePackageAgreementHistoryLifecycleStatus(agreementIdentifier,
                     LIFECYCLE_STATUS_TYPE_ACPTD_AR))
@@ -109,18 +108,18 @@ public class SignPackageAgreementService {
   /**
    * Builds a response DTO from a selling process entity.
    *
-   * @param sp the selling process to convert
+   * @param sellingProcess the selling process to convert
    * @return a {@link SellingProcessResponse} containing public data
    */
-  private SellingProcessResponse buildResponse(SellingProcess sp) {
+  private SellingProcessResponse buildResponse(SellingProcess sellingProcess) {
     return new SellingProcessResponse(
-        sp.getId().id(),
-        sp.getProcessType().getBusinessCode().name(),
-        sp.getPackageType().getPackageBusinessCode().name(),
-        sp.getStatus().name(),
-        sp.getPackageAgreementId().id(),
-        sp.getInvolvedPartyId().id(),
-        sp.getCreatedAt().toString(),
-        sp.getUpdatedAt().toString());
+        sellingProcess.getId().id(),
+        sellingProcess.getProcessType().getBusinessCode().name(),
+        sellingProcess.getPackageType().getPackageBusinessCode().name(),
+        sellingProcess.getStatus().name(),
+        sellingProcess.getPackageAgreementId().id(),
+        sellingProcess.getInvolvedPartyId().id(),
+        sellingProcess.getCreatedAt().toString(),
+        sellingProcess.getUpdatedAt().toString());
   }
 }

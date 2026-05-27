@@ -6,7 +6,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.springframework.stereotype.Component;
 
-import es.ing.dailybanking.packagesolutionselling.core.domain.AgreementIdentifier;
 import es.ing.dailybanking.packagesolutionselling.core.domain.AuditLogInput;
 import es.ing.dailybanking.packagesolutionselling.core.domain.BenefitPlatformsNotification;
 import es.ing.dailybanking.packagesolutionselling.core.domain.OperationType;

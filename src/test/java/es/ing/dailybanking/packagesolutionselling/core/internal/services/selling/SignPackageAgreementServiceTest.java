@@ -2,11 +2,9 @@ package es.ing.dailybanking.packagesolutionselling.core.internal.services.sellin
 
 import static es.ing.dailybanking.packagesolutionselling.core.internal.usecases.selling.Constants.LIFECYCLE_STATUS_TYPE_ACPTD_AR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -29,6 +27,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import es.ing.dailybanking.packagesolutionselling.core.domain.AgreementIdentifier;
 import es.ing.dailybanking.packagesolutionselling.core.domain.AuditLogInput;
@@ -123,12 +122,12 @@ class SignPackageAgreementServiceTest {
 
     BenefitPlatformsNotification notification = captor.getValue();
     assertNotNull(notification);
-    assertSame(sellingProcess.getInvolvedPartyId(), notification.getId());
-    assertTrue(notification.isHasDocumentation());
-    assertFalse(notification.isHasIdentification());
-    assertFalse(notification.isDwNotified());
-    assertFalse(notification.isGeiiNotified());
-    assertFalse(notification.isBillingNotified());
+    assertSame(sellingProcess.getInvolvedPartyId(), ReflectionTestUtils.getField(notification, "id"));
+    assertEquals(true, ReflectionTestUtils.getField(notification, "hasDocumentation"));
+    assertEquals(false, ReflectionTestUtils.getField(notification, "hasIdentification"));
+    assertEquals(false, ReflectionTestUtils.getField(notification, "isDwNotified"));
+    assertEquals(false, ReflectionTestUtils.getField(notification, "isGeiiNotified"));
+    assertEquals(false, ReflectionTestUtils.getField(notification, "isBillingNotified"));
   }
 
   @Test
